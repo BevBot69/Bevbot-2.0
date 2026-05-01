@@ -1,0 +1,3 @@
+secrets.env    # Safe ONLY after: ansible-vault encrypt secrets.env
+*.retry
+.DS_Store

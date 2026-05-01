@@ -1,0 +1,31 @@
+---
+services:
+
+  jellyfin:
+    image: docker.io/jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: always
+    network_mode: host
+    volumes:
+      - /home/core/compose-files/jellyfin/config:/config
+      - /home/core/compose-files/jellyfin/cache:/cache
+      - /mnt/media:/media:ro
+    environment:
+      - JELLYFIN_PublishedServerUrl=${JELLYFIN_PUBLISHED_URL}
+
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    container_name: ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - /home/core/compose-files/ollama/data:/root/.ollama
+    # Uncomment below if host has an NVIDIA GPU:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]

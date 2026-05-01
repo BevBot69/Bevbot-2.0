@@ -1,0 +1,92 @@
+---
+- name: Configure Bevbot 2.0 (uCore)
+  hosts: bevbot2
+  remote_user: core
+
+  vars:
+    smb_host: "192.168.1.x"     # Replace with your NAS IP or hostname
+    smb_share: "media"          # Replace with your NAS share name
+    smb_username: "{{ lookup('ini', 'SMB_USERNAME', file='secrets.env') }}"
+    smb_password: "{{ lookup('ini', 'SMB_PASSWORD', file='secrets.env') }}"
+    smb_domain: "{{ lookup('ini', 'SMB_DOMAIN', file='secrets.env') }}"
+
+  pre_tasks:
+    - name: Put SELinux in permissive mode
+      become: true
+      ansible.posix.selinux:
+        policy: targeted
+        state: permissive
+
+    - name: Create compose files directory
+      ansible.builtin.file:
+        path: /home/core/compose-files
+        state: directory
+        mode: "0755"
+
+    - name: Copy secrets file
+      ansible.builtin.copy:
+        decrypt: true
+        src: secrets.env
+        dest: /home/core/compose-files/secrets.env
+        mode: "0600"
+
+  tasks:
+    - name: Enable Tailscale
+      become: true
+      ansible.builtin.systemd_service:
+        name: tailscaled
+        state: started
+        enabled: true
+
+    - name: Enable Tailscale SSH
+      become: true
+      ansible.builtin.command: tailscale set --ssh
+      changed_when: false
+
+    - name: Mount SMB share
+      ansible.builtin.include_tasks:
+        file: tasks/smb.yml
+
+    - name: Configure podman.service mount dependency
+      become: true
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/podman.service.d/override.conf
+        mode: "0644"
+        content: |
+          [Unit]
+          RequiresMountsFor=/mnt/media
+          After=network-online.target mnt-media.mount
+          Wants=network-online.target
+      notify: Reload systemd daemon
+
+    - name: Copy compose files
+      ansible.builtin.copy:
+        src: podman/
+        dest: /home/core/compose-files/podman
+
+    - name: Create Jellyfin directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /home/core/compose-files/jellyfin/config
+        - /home/core/compose-files/jellyfin/cache
+
+    - name: Create Ollama data directory
+      ansible.builtin.file:
+        path: /home/core/compose-files/ollama/data
+        state: directory
+        mode: "0755"
+
+    - name: Setup containers
+      containers.podman.podman_compose:
+        project_src: /home/core/compose-files/podman
+        env_file: /home/core/compose-files/secrets.env
+        state: started
+
+  handlers:
+    - name: Reload systemd daemon
+      become: true
+      ansible.builtin.systemd_service:
+        daemon_reload: true

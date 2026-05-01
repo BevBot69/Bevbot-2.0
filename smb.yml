@@ -1,0 +1,38 @@
+---
+- name: Create /etc/samba directory
+  become: true
+  ansible.builtin.file:
+    path: /etc/samba
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Deploy SMB credentials file
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/samba/bevbot2.credentials
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      username={{ lookup('env', 'SMB_USERNAME') | default(smb_username) }}
+      password={{ lookup('env', 'SMB_PASSWORD') | default(smb_password) }}
+      {% if smb_domain is defined and smb_domain %}domain={{ smb_domain }}{% endif %}
+  no_log: true
+
+- name: Create SMB mount point
+  become: true
+  ansible.builtin.file:
+    path: /mnt/media
+    state: directory
+    mode: "0775"
+
+- name: Mount NAS media share
+  become: true
+  ansible.posix.mount:
+    path: /mnt/media
+    src: "//{{ smb_host }}/{{ smb_share }}"
+    fstype: cifs
+    opts: "credentials=/etc/samba/bevbot2.credentials,vers=3.0,uid=1000,gid=1000,file_mode=0664,dir_mode=0775,noperm,_netdev"
+    state: mounted
