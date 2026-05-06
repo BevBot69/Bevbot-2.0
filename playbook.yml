@@ -4,8 +4,8 @@
   remote_user: core
 
   vars:
-    smb_host: "192.168.1.x"     # Replace with your NAS IP or hostname
-    smb_share: "media"          # Replace with your NAS share name
+    smb_host: bevbot     # Replace with your NAS IP or hostname
+    smb_share: Community          # Replace with your NAS share name
     smb_username: "{{ lookup('ini', 'SMB_USERNAME', file='secrets.env') }}"
     smb_password: "{{ lookup('ini', 'SMB_PASSWORD', file='secrets.env') }}"
     smb_domain: "{{ lookup('ini', 'SMB_DOMAIN', file='secrets.env') }}"
@@ -78,6 +78,19 @@
         path: /home/core/compose-files/ollama/data
         state: directory
         mode: "0755"
+
+    - name: Create Portainer data directory
+      ansible.builtin.file:
+        path: /home/core/compose-files/portainer/data
+        state: directory
+        mode: "0755"
+
+    - name: Enable Podman socket (required for Portainer)
+      become: true
+      ansible.builtin.systemd_service:
+        name: podman.socket
+        state: started
+        enabled: true
 
     - name: Setup containers
       containers.podman.podman_compose:

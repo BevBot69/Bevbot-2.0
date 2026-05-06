@@ -29,3 +29,13 @@ services:
     #         - driver: nvidia
     #           count: all
     #           capabilities: [gpu]
+
+  portainer:
+    image: docker.io/portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - /home/core/compose-files/portainer/data:/data
+      - /run/podman/podman.sock:/var/run/docker.sock:ro
