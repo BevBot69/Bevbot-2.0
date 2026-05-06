@@ -4,6 +4,7 @@
   remote_user: core
 
   vars:
+    ts_authkey: "{{ lookup('ini', 'TS_AUTHKEY', file='secrets.env') }}"
     smb_host: bevbot     # Replace with your NAS IP or hostname
     smb_share: Community          # Replace with your NAS share name
     smb_username: "{{ lookup('ini', 'SMB_USERNAME', file='secrets.env') }}"
@@ -32,16 +33,9 @@
 
   tasks:
     - name: Enable Tailscale
-      become: true
-      ansible.builtin.systemd_service:
-        name: tailscaled
-        state: started
-        enabled: true
-
-    - name: Enable Tailscale SSH
-      become: true
-      ansible.builtin.command: tailscale set --ssh
-      changed_when: false
+  become: true
+  ansible.builtin.command: tailscale up --authkey {{ ts_authkey }} --ssh
+  changed_when: false
 
     - name: Mount SMB share
       ansible.builtin.include_tasks:
