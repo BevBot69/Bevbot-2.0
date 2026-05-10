@@ -33,9 +33,9 @@
 
   tasks:
     - name: Enable Tailscale
-  become: true
-  ansible.builtin.command: tailscale up --authkey {{ ts_authkey }} --ssh
-  changed_when: false
+      become: true
+      ansible.builtin.command: tailscale up --authkey {{ ts_authkey }} --ssh
+      changed_when: false
 
     - name: Mount SMB share
       ansible.builtin.include_tasks:
