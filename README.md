@@ -2,7 +2,7 @@
 
 Ansible playbook to provision Bevbot 2.0 running [uCore](https://github.com/ublue-os/ucore).
 
-**Services:** Jellyfin · Ollama  
+**Services:** Jellyfin · Ollama  · Portainer · Minecraft
 **Containers:** Podman Compose  
 **SSH:** Tailscale  
 **Media:** NAS via SMB  
